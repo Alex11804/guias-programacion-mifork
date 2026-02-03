@@ -1,0 +1,11 @@
+name: guias-programacion
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - pandoc
+  - pandocfilters
+  - tectonic
+  - make
+  - nodejs
+  - pip
