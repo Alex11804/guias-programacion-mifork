@@ -177,53 +177,186 @@ public class Punto {
 
 En este diseño, `maxX` y `maxY` son miembros de clase porque están declarados como `static`, y su valor es compartido por todos los objetos `Punto`. Los métodos `getMaxX` y `getMaxY` también son estáticos, ya que acceden a información asociada a la clase y no a una instancia concreta. De este modo, se mantiene la encapsulación y se controla el acceso a estos datos globales.
 
-
-
 ## 14. Como sería un método factoría dentro de la clase `Punto` para construir un `Punto` a partir de dos coordenadas, pero que las redondee al entero más cercano. Escribe sólo el código del método, no toda la clase ¿Has usado `static`? 
 
-### Respuesta
-
+public static Punto crearPuntoRedondeado(double x, double y) {
+    double xRedondeado = Math.round(x);
+    double yRedondeado = Math.round(y);
+    return new Punto(xRedondeado, yRedondeado);
+}
+Sí, se ha utilizado `static`, ya que un método factoría es un método de clase. Su función es crear objetos sin depender de una instancia previa, por lo que debe poder invocarse directamente sobre la clase `Punto`.
 
 ## 15. Cambia la implementación de `Punto`. En vez de dos `double`, emplea un array interno de dos posiciones, intentando no modificar la interfaz pública de la clase.
 
-### Respuesta
+Si se desea cambiar la representación interna de la clase `Punto` sin modificar su **interfaz pública**, puede sustituirse los dos atributos `double` por un único array interno de dos posiciones. Desde el exterior, la clase seguirá utilizándose igual, ya que el constructor y los métodos públicos mantienen la misma firma. Este es precisamente uno de los beneficios de la encapsulación: permitir cambios internos sin afectar al código que usa la clase.
+La modificación afecta a la implementación interna. En lugar de almacenar `x` e `y` como variables independientes, se almacenan en un array privado. Los métodos públicos acceden a las posiciones correspondientes del array para realizar los cálculos necesarios. El resto del programa no necesita conocer este detalle.
 
+public class Punto {
+
+    private double[] coords = new double[2];
+
+    public Punto(double x, double y) {
+        coords[0] = x;
+        coords[1] = y;
+    }
+
+    public double calcularDistanciaAOrigen() {
+        return Math.sqrt(coords[0] * coords[0] + coords[1] * coords[1]);
+    }
+
+    public double calcularDistanciaAPunto(Punto otro) {
+        double dx = this.coords[0] - otro.coords[0];
+        double dy = this.coords[1] - otro.coords[1];
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+}
+Desde el punto de vista de quien utiliza la clase, no ha cambiado nada. La interfaz pública permanece intacta, mientras que la estructura interna puede evolucionar libremente. Esto demuestra cómo la ocultación de información protege al resto del sistema frente a cambios en la implementación.
 
 ## 16. Si un atributo va a tener un método "getter" y "setter" públicos, ¿no es mejor declararlo público? ¿Cuál es la convención más habitual sobre los atributos, que sean públicos o privados? ¿Tiene esto algo que ver con las "invariantes de clase"?
 
-### Respuesta
+Aunque un atributo vaya a disponer de métodos getter y setter públicos, no es recomendable declararlo directamente como `public`. Si el atributo fuese público, cualquier parte del programa podría acceder a él y modificarlo sin ningún tipo de control. En cambio, al declararlo `private` y ofrecer métodos de acceso, se mantiene la posibilidad de introducir validaciones o lógica adicional sin alterar la interfaz pública.
 
+La convención más habitual en Java y en la mayoría de los diseños orientados a objetos es declarar los atributos como `private`. De este modo, el estado interno queda protegido y la clase conserva el control sobre cómo se accede o se modifica. Incluso cuando un getter y un setter parecen limitarse a devolver o asignar un valor, su existencia permite cambiar la implementación interna en el futuro sin afectar al código externo.
+
+Esta práctica está directamente relacionada con las invariantes de clase. Si los atributos fueran públicos, cualquier parte del programa podría asignar valores que violen las condiciones que definen un estado válido. En cambio, mediante setters controlados, la clase puede comprobar que los nuevos valores respetan dichas invariantes antes de aceptarlos. Por tanto, mantener los atributos privados es fundamental para preservar la coherencia interna y la robustez del diseño.
 
 ## 17. ¿Qué significa que una clase sea **inmutable**? ¿qué es un método modificador? ¿Un método modificador es siempre un "setter"? ¿Tiene ventajas que una clase sea inmutable?
 
-### Respuesta
+Una clase es inmutable cuando los objetos que se crean a partir de ella no pueden cambiar su estado una vez construidos. La clase no ofrece métodos públicos que alteren esos valores. Si se necesita un “cambio”, se crea un nuevo objeto con los valores deseados en lugar de modificar el existente.
 
+Un método modificador es cualquier método que altera el estado interno de un objeto. Su finalidad es cambiar uno o varios atributos de la instancia. Aunque muchos métodos modificadores adoptan la forma de un setter (por ejemplo, `setX(...)`), no todos los métodos que modifican el estado son setters. Un método que incremente un contador, que desplace un punto o que cambie un estado interno también es modificador aunque no siga la convención de nombre típica.
+Por tanto, un método modificador no es necesariamente un setter; el setter es simplemente un caso particular de método que asigna directamente un valor a un atributo. En cambio, un método modificador puede realizar cálculos o aplicar reglas antes de actualizar el estado.
+Las clases inmutables presentan ventajas importantes. Facilitan el razonamiento sobre el programa, ya que el estado de un objeto no cambia inesperadamente, y ayudan a mantener automáticamente las invariantes de clase. Además, reducen efectos secundarios y errores derivados de modificaciones no controladas, lo que mejora la robustez y el mantenimiento del software.
 
 ## 18. ¿Es recomendable incluir métodos "setter" siempre y como convención?
 
-### Respuesta
-
+No es recomendable incluir métodos *setter* siempre ni como una convención automática. Añadir un *setter* implica permitir que el estado interno del objeto pueda modificarse desde el exterior, lo que amplía la interfaz pública de la clase. Cada punto adicional de modificación aumenta la complejidad del diseño y el riesgo de usos incorrectos.
+Desde el punto de vista del modelado, solo deberían existir setters cuando tenga sentido que ese atributo cambie libremente después de la creación del objeto. En muchos casos, es preferible proporcionar métodos con un significado más específico que representen acciones del dominio, en lugar de permitir modificaciones genéricas de atributos. Esto hace que el código sea más expresivo y coherente con el problema que se está modelando.
+La inclusión indiscriminada de setters puede comprometer las invariantes de clase. Cada modificación del estado debe garantizar que el objeto siga siendo válido, y cuantos más métodos permitan cambios, mayor será el esfuerzo necesario para mantener la coherencia interna. Por tanto, la práctica habitual en un diseño orientado a objetos cuidadoso es no añadir setters por defecto, sino únicamente cuando estén justificados por el comportamiento esperado de la clase.
 
 ## 19. ¿La clase `String` en Java es mutable o inmutable? ¿Qué ocurre al concatenar dos cadenas? ¿Qué debemos hacer si vamos a hacer una operación que implique concatenar muchas veces para construir paso a paso una cadena muy larga?
 
-### Respuesta
-
+La clase `String` en Java es inmutable. Esto significa que, una vez creado un objeto de tipo `String`, su contenido no puede modificarse. Cualquier operación que parezca cambiar la cadena, como convertirla a mayúsculas o añadir texto, en realidad genera un nuevo objeto con el resultado, manteniendo intacta la cadena original.
+Al concatenar dos cadenas mediante el operador `+`, se crea un nuevo objeto `String` que contiene el resultado de la concatenación. Las cadenas originales no se alteran. Este comportamiento es coherente con la inmutabilidad, pero implica que cada concatenación supone la creación de un nuevo objeto y la copia de los caracteres implicados.
+Si se necesita construir una cadena muy larga mediante múltiples concatenaciones sucesivas, no es recomendable utilizar directamente `String`. En estos casos se debe emplear una clase mutable como `StringBuilder`, que permite modificar el contenido interno sin crear un nuevo objeto en cada operación. Esto mejora considerablemente la eficiencia en tiempo y memoria cuando se realizan muchas concatenaciones.
 
 ## 20. En POO ¿Cómo se comparan objetos de una misma clase? ¿Por su contenido o por su identidad? ¿Qué es el método equals en Java? ¿Qué hace por defecto? ¿Cómo se deben comparar dos cadenas en Java? 
 
-### Respuesta
-
+En Programación Orientada a Objetos, los objetos pueden compararse de dos formas: por identidad o por contenido. Comparar por identidad significa comprobar si dos referencias apuntan exactamente al mismo objeto en memoria. Comparar por contenido significa verificar si dos objetos distintos representan la misma información según los criterios del dominio. Ambas comparaciones son conceptualmente diferentes y deben elegirse según lo que se quiera comprobar.
+En Java, el operador `==` aplicado a objetos compara identidad, no contenido. Por su parte, el método `equals` está definido en la clase base `Object`, de la que heredan todas las clases. Por defecto, la implementación de `equals` en `Object` se comporta igual que `==`, es decir, comprueba si ambas referencias apuntan al mismo objeto. Para comparar por contenido, es necesario sobrescribir (`override`) el método `equals` en la clase correspondiente.
+Las cadenas en Java, deben compararse utilizando el método `equals`, no el operador `==`. El método `equals` en la clase `String` está redefinido para comparar el contenido carácter por carácter. Usar `==` puede dar resultados inesperados, ya que solo comprueba si ambas referencias señalan al mismo objeto, no si contienen el mismo texto.
 
 ## 21. ¿Qué son las clases "wrapper" en un lenguaje de programación orientado a objetos? ¿Cómo se hace? ¿Es un proceso automático? ¿Qué ventajas tienen? ¿Todos los lenguajes orientados a objetos tienen tipos primitivos y necesitan wrappers? 
 
-### Respuesta
-
+Las clases wrapper son clases que encapsulan valores de tipos primitivos para poder tratarlos como objetos dentro de un modelo orientado a objetos. En Java, por ejemplo, cada tipo primitivo (`int`, `double`, `boolean`, etc.) tiene una clase asociada (`Integer`, `Double`, `Boolean`, etc.). Estas clases permiten que valores básicos puedan utilizarse en contextos donde se requieren objetos, como en colecciones.
+El proceso de convertir un valor primitivo en su clase wrapper se denomina boxing, y el proceso inverso se llama unboxing. En versiones modernas de Java, este proceso es automático: el compilador realiza la conversión implícitamente cuando es necesario. Sin embargo, conceptualmente implica la creación de un objeto que contiene el valor primitivo.
+Las ventajas de las clases wrapper incluyen la posibilidad de almacenar valores primitivos en estructuras que solo admiten objetos, representar la ausencia de valor mediante `null`, y disponer de métodos útiles asociados al tipo (por ejemplo, conversión de texto a número). Además, permiten integrar los tipos básicos dentro del modelo orientado a objetos de forma coherente.
+No todos los lenguajes orientados a objetos distinguen entre tipos primitivos y objetos. En algunos lenguajes, todos los valores son objetos, por lo que no se necesitan clases wrapper. En cambio, en lenguajes como Java, donde existen tipos primitivos por razones de eficiencia, las clases wrapper son necesarias para unificar el tratamiento de datos dentro del sistema de tipos.
 
 ## 22. ¿En POO qué es un **tipo de dato enumerado**? ¿En Java, un tipo de dato enumerado es una clase? ¿Qué ventajas tienen en términos de encapsulación los enumerados en Java?
 
-### Respuesta
-
+En Programación Orientada a Objetos, un tipo de dato enumerado es un tipo que define un conjunto finito y cerrado de valores posibles. Se utiliza cuando una variable solo puede tomar uno entre varios valores predefinidos, lo que evita el uso de números o cadenas sin significado explícito. Desde el punto de vista del diseño, un enumerado mejora la claridad del código y restringe los valores válidos desde el propio sistema de tipos.
+En Java, un tipo enumerado (`enum`) es en realidad una clase especial. Aunque su sintaxis es distinta a la de una clase convencional, cada enumerado define una clase que hereda implícitamente de `java.lang.Enum`. Cada uno de sus valores es una instancia única de esa clase. Esto significa que los enumerados no son simples constantes, sino objetos con comportamiento y estado controlado.
+En términos de encapsulación, los enumerados en Java ofrecen ventajas importantes. Al ser clases, pueden tener atributos privados, constructores (implícitamente privados) y métodos públicos. Esto permite asociar datos y comportamiento a cada valor del enumerado y centralizar la lógica relacionada dentro del propio tipo. Además, el conjunto de valores posibles está completamente controlado por la definición del `enum`, lo que impide la creación de valores no válidos y refuerza las invariantes del diseño.
 
 ## 23. Crea un tipo enumerado en Java que se llame `Mes`, con doce posibles instancias y que además proporcione métodos para obtener cuántos días tiene ese mes, el ordinal de ese mes en el año (1-12), empleando atributos privados y constructores del tipo enumerado. Añade además cuatro métodos para devolver si ese mes tiene algunos días de invierno, primavera, verano u otoño, indicando con un booleano el hemisferio (norte o sur, parámetro `enHemisferioNorte`). Es decir: `esDePrimavera(boolean esHemisferioNorte)`, `esDeVerano(boolean esHemisferioNorte)`, `esDeOtoño(boolean esHemisferioNorte)`, `esDeInvierno(boolean esHemisferioNorte)`
 
-### Respuesta
+En Java, un tipo enumerado permite definir un conjunto fijo de instancias y asociarles atributos y comportamiento. En el caso de `Mes`, cada mes puede modelarse como una instancia única con información propia, como el número de días y su posición en el año. El constructor del enumerado es implícitamente `private`, lo que impide crear nuevos meses fuera de los definidos.
+Los atributos se declaran como privados para mantener la encapsulación, y los métodos públicos permiten consultar la información asociada a cada mes. Además, los métodos relacionados con las estaciones tienen en cuenta el hemisferio, ya que las estaciones se invierten entre el norte y el sur.
+
+public enum Mes {
+
+    ENERO(1, 31),
+    FEBRERO(2, 28),
+    MARZO(3, 31),
+    ABRIL(4, 30),
+    MAYO(5, 31),
+    JUNIO(6, 30),
+    JULIO(7, 31),
+    AGOSTO(8, 31),
+    SEPTIEMBRE(9, 30),
+    OCTUBRE(10, 31),
+    NOVIEMBRE(11, 30),
+    DICIEMBRE(12, 31);
+
+    private int ordinalAnio;
+    private int dias;
+
+    private Mes(int ordinalAnio, int dias) {
+        this.ordinalAnio = ordinalAnio;
+        this.dias = dias;
+    }
+
+    public int getDias() {
+        return dias;
+    }
+
+    public int getOrdinalAnio() {
+        return ordinalAnio;
+    }
+
+    public boolean esDePrimavera(boolean enHemisferioNorte) {
+        return enHemisferioNorte
+                ? (this == MARZO || this == ABRIL || this == MAYO)
+                : (this == SEPTIEMBRE || this == OCTUBRE || this == NOVIEMBRE);
+    }
+
+    public boolean esDeVerano(boolean enHemisferioNorte) {
+        return enHemisferioNorte
+                ? (this == JUNIO || this == JULIO || this == AGOSTO)
+                : (this == DICIEMBRE || this == ENERO || this == FEBRERO);
+    }
+
+    public boolean esDeOtoño(boolean enHemisferioNorte) {
+        return enHemisferioNorte
+                ? (this == SEPTIEMBRE || this == OCTUBRE || this == NOVIEMBRE)
+                : (this == MARZO || this == ABRIL || this == MAYO);
+    }
+
+    public boolean esDeInvierno(boolean enHemisferioNorte) {
+        return enHemisferioNorte
+                ? (this == DICIEMBRE || this == ENERO || this == FEBRERO)
+                : (this == JUNIO || this == JULIO || this == AGOSTO);
+    }
+}
+Este enumerado no solo define los doce meses, sino que encapsula la lógica asociada a ellos dentro del propio tipo. De este modo, se refuerza la claridad del diseño y se evita dispersar reglas relacionadas con los meses por distintas partes del programa.
+
+## 24. Añade a la clase `Mes` del ejercicio anterior cuatro métodos para devolver si ese mes tiene algunos días de invierno, primavera, verano u otoño, indicando con un booleano el hemisferio (norte o sur, parámetro `enHemisferioNorte`). Es decir: `esDePrimavera(boolean esHemisferioNorte)`, `esDeVerano(boolean esHemisferioNorte)`, `esDeOtoño(boolean esHemisferioNorte)`, `esDeInvierno(boolean esHemisferioNorte)`
+
+Para añadir estos métodos al tipo enumerado `Mes`, basta con incorporar cuatro métodos públicos que determinen si el mes contiene **algún día** de una estación concreta. Como las estaciones se invierten entre hemisferio norte y sur, el parámetro `enHemisferioNorte` permite ajustar la lógica según corresponda.
+Se considera que un mes “tiene algunos días” de una estación si al menos parte del mes pertenece a ella (por ejemplo, marzo contiene días de invierno y de primavera en el hemisferio norte). La implementación puede expresarse directamente mediante comparaciones con las constantes del enumerado.
+
+public boolean esDePrimavera(boolean enHemisferioNorte) {
+    if (enHemisferioNorte) {
+        return this == MARZO || this == ABRIL || this == MAYO || this == JUNIO;
+    } else {
+        return this == SEPTIEMBRE || this == OCTUBRE || this == NOVIEMBRE || this == DICIEMBRE;
+    }
+}
+
+public boolean esDeVerano(boolean enHemisferioNorte) {
+    if (enHemisferioNorte) {
+        return this == JUNIO || this == JULIO || this == AGOSTO || this == SEPTIEMBRE;
+    } else {
+        return this == DICIEMBRE || this == ENERO || this == FEBRERO || this == MARZO;
+    }
+}
+
+public boolean esDeOtoño(boolean enHemisferioNorte) {
+    if (enHemisferioNorte) {
+        return this == SEPTIEMBRE || this == OCTUBRE || this == NOVIEMBRE || this == DICIEMBRE;
+    } else {
+        return this == MARZO || this == ABRIL || this == MAYO || this == JUNIO;
+    }
+}
+
+public boolean esDeInvierno(boolean enHemisferioNorte) {
+    if (enHemisferioNorte) {
+        return this == DICIEMBRE || this == ENERO || this == FEBRERO || this == MARZO;
+    } else {
+        return this == JUNIO || this == JULIO || this == AGOSTO || this == SEPTIEMBRE;
+    }
+}
+
+De este modo, la lógica relacionada con las estaciones queda completamente encapsulada dentro del propio tipo `Mes`. El resto del programa no necesita conocer las reglas concretas de correspondencia entre meses y estaciones, ya que el enumerado ofrece métodos claros y expresivos para consultarlo.
+
